@@ -16,18 +16,21 @@ RUN chmod +x  /metrics/source/app/action/index.mjs \
   && apt-get install -y google-chrome-stable fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-kacst fonts-freefont-ttf libxss1 \
     --no-install-recommends \
   && rm -rf /var/lib/apt/lists/* \
-  # Install ruby to support linguist
-  # Based on https://github.com/github/linguist
+  # Install ruby to support github gems
+  # Based on https://github.com/github/linguist and https://github.com/github/licensed
   && apt-get update \
   && apt-get install -y ruby-full \
   && apt-get install -y git g++ cmake pkg-config libicu-dev zlib1g-dev libcurl4-openssl-dev libssl-dev ruby-dev \
   && gem install github-linguist \
+  && gem install licensed \
   # Install python for node-gyp
   && apt-get update \
   && apt-get install -y python3 \
   # Install node modules
   && cd /metrics \
-  && npm ci
+  && npm ci \
+  # Rebuild indexes
+  && npm run index
 
 # Environment variables
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD true

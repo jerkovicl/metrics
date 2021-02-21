@@ -2,8 +2,14 @@
   //Init
     const {data:templates} = await axios.get("/.templates")
     const {data:plugins} = await axios.get("/.plugins")
+    const {data:metadata} = await axios.get("/.plugins.metadata")
     const {data:base} = await axios.get("/.plugins.base")
     const {data:version} = await axios.get("/.version")
+    const {data:hosted} = await axios.get("/.hosted")
+    templates.sort((a, b) => (a.name.startsWith("@") ^ b.name.startsWith("@")) ? (a.name.startsWith("@") ? 1 : -1) : a.name.localeCompare(b.name))
+  //Disable unsupported options
+    delete metadata.core.web.output
+    delete metadata.core.web.twemojis
   //App
     return new Vue({
       //Initialization
@@ -50,101 +56,28 @@
           palette:"light",
           requests:{limit:0, used:0, remaining:0, reset:0},
           cached:new Map(),
-          config:{
-            timezone:"",
-            animated:true,
-          },
+          config:Object.fromEntries(Object.entries(metadata.core.web).map(([key, {defaulted}]) => [key, defaulted])),
+          metadata:Object.fromEntries(Object.entries(metadata).map(([key, {web}]) => [key, web])),
+          hosted,
           plugins:{
             base,
             list:plugins,
             enabled:{base:Object.fromEntries(base.map(key => [key, true]))},
             descriptions:{
-              pagespeed:"⏱️ Website performances",
-              languages:"🈷️ Most used languages",
-              followup:"🎟️ Issues and pull requests",
-              traffic:"🧮 Pages views",
-              lines:"👨‍💻 Lines of code changed",
-              habits:"💡 Coding habits",
-              music:"🎼 Music plugin",
-              posts:"✒️ Recent posts",
-              isocalendar:"📅 Isometric commit calendar",
-              gists:"🎫 Gists metrics",
-              topics:"📌 Starred topics",
-              projects:"🗂️ Projects",
-              tweets:"🐤 Latest tweets",
-              stars:"🌟 Recently starred repositories",
-              stargazers:"✨ Stargazers over last weeks",
-              activity:"📰 Recent activity",
-              people:"🧑‍🤝‍🧑 Followers and followed",
               base:"🗃️ Base content",
               "base.header":"Header",
               "base.activity":"Account activity",
               "base.community":"Community stats",
               "base.repositories":"Repositories metrics",
               "base.metadata":"Metadata",
+              ...Object.fromEntries(Object.entries(metadata).map(([key, {name}]) => [key, name]))
             },
             options:{
-              descriptions:{
-                "languages.ignored":{text:"Ignored languages", placeholder:"lang-0, lang-1, ..."},
-                "languages.skipped":{text:"Skipped repositories", placeholder:"repo-0, repo-1, ..."},
-                "pagespeed.detailed":{text:"Detailed audit", type:"boolean"},
-                "pagespeed.screenshot":{text:"Audit screenshot", type:"boolean"},
-                "pagespeed.url":{text:"Url", placeholder:"(default to GitHub attached)"},
-                "habits.from":{text:"Events to use", type:"number", min:1, max:1000},
-                "habits.days":{text:"Max events age", type:"number", min:1, max:30},
-                "habits.facts":{text:"Display facts", type:"boolean"},
-                "habits.charts":{text:"Display charts", type:"boolean"},
-                "music.playlist":{text:"Playlist url", placeholder:"https://embed.music.apple.com/en/playlist/"},
-                "music.limit":{text:"Limit", type:"number", min:1, max:100},
-                "posts.limit":{text:"Limit", type:"number", min:1, max:30},
-                "posts.user":{text:"Username", placeholder:"(default to GitHub login)"},
-                "posts.source":{text:"Source", type:"select", values:["dev.to"]},
-                "isocalendar.duration":{text:"Duration", type:"select", values:["half-year", "full-year"]},
-                "projects.limit":{text:"Limit", type:"number", min:0, max:100},
-                "projects.repositories":{text:"Repositories projects", placeholder:"user/repo/projects/1, ..."},
-                "topics.mode":{text:"Mode", type:"select", values:["starred", "mastered"]},
-                "topics.sort":{text:"Sort by", type:"select", values:["starred", "activity", "stars", "random"]},
-                "topics.limit":{text:"Limit", type:"number", min:0, max:20},
-                "tweets.limit":{text:"Limit", type:"number", min:1, max:10},
-                "tweets.user":{text:"Username", placeholder:"(default to GitHub attached)"},
-                "stars.limit":{text:"Limit", type:"number", min:1, max:100},
-                "activity.limit":{text:"Limit", type:"number", min:1, max:100},
-                "activity.days":{text:"Max events age", type:"number", min:1, max:9999},
-                "activity.filter":{text:"Events type", placeholder:"all"},
-                "people.size":{text:"Limit", type:"number", min:16, max:64},
-                "people.limit":{text:"Limit", type:"number", min:1, max:9999},
-                "people.types":{text:"Types", placeholder:"followers, following"},
-                "people.identicons":{text:"Use identicons", type:"boolean"},
-              },
-              "languages.ignored":"",
-              "languages.skipped":"",
-              "pagespeed.detailed":false,
-              "pagespeed.screenshot":false,
-              "habits.from":200,
-              "habits.days":14,
-              "habits.facts":true,
-              "habits.charts":false,
-              "music.playlist":"",
-              "music.limit":4,
-              "posts.limit":4,
-              "posts.user":"",
-              "posts.source":"dev.to",
-              "isocalendar.duration":"half-year",
-              "projects.limit":4,
-              "projects.repositories":"",
-              "topics.mode":"starred",
-              "topics.sort":"stars",
-              "topics.limit":12,
-              "tweets.limit":2,
-              "tweets.user":"",
-              "stars.limit":4,
-              "activity.limit":5,
-              "activity.days":14,
-              "activity.filter":"all",
-              "people.size":28,
-              "people.limit":28,
-              "people.types":"followers, following",
-              "people.identicons":false,
+              descriptions:{...(Object.assign({}, ...Object.entries(metadata).flatMap(([key, {web}]) => web)))},
+              ...(Object.fromEntries(Object.entries(
+                Object.assign({}, ...Object.entries(metadata).flatMap(([key, {web}]) => web)))
+                  .map(([key, {defaulted}]) => [key, defaulted])
+              ))
             },
           },
           templates:{
@@ -188,12 +121,14 @@
                   .filter(([key, value]) => `${value}`.length)
                   .filter(([key, value]) => this.plugins.enabled[key.split(".")[0]])
                   .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
+              //Base options
+                const base = Object.entries(this.plugins.options).filter(([key, value]) => (key in metadata.base.web)&&(value !== metadata.base.web[key]?.defaulted)).map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
               //Config
-                const config = Object.entries(this.config).filter(([key, value]) => value).map(([key, value]) => `config.${key}=${encodeURIComponent(value)}`)
+                const config = Object.entries(this.config).filter(([key, value]) => (value)&&(value !== metadata.core.web[key]?.defaulted)).map(([key, value]) => `config.${key}=${encodeURIComponent(value)}`)
               //Template
                 const template = (this.templates.selected !== templates[0]) ? [`template=${this.templates.selected}`] : []
               //Generated url
-                const params = [...template, ...plugins, ...options, ...config].join("&")
+                const params = [...template, ...base, ...plugins, ...options, ...config].join("&")
                 return `${window.location.protocol}//${window.location.host}/${this.user}${params.length ? `?${params}` : ""}`
               },
           //Embedded generated code
@@ -206,7 +141,7 @@
                 `# Visit https://github.com/lowlighter/metrics/blob/master/action.yml for full reference`,
                 `name: Metrics`,
                 `on:`,
-                `  # Schedule updates`,
+                `  # Schedule updates (each hour)`,
                 `  schedule: [{cron: "0 * * * *"}]`,
                 `  # Lines below let you run workflow manually and on each commit`,
                 `  push: {branches: ["master", "main"]}`,
@@ -227,9 +162,10 @@
                 `          template: ${this.templates.selected}`,
                 `          base: ${Object.entries(this.plugins.enabled.base).filter(([key, value]) => value).map(([key]) => key).join(", ")||'""'}`,
                 ...[
+                  ...Object.entries(this.plugins.options).filter(([key, value]) => (key in metadata.base.web)&&(value !== metadata.base.web[key]?.defaulted)).map(([key, value]) => `          ${key.replace(/[.]/, "_")}: ${typeof value === "boolean" ? {true:"yes", false:"no"}[value] : value}`),
                   ...Object.entries(this.plugins.enabled).filter(([key, value]) => (key !== "base")&&(value)).map(([key]) => `          plugin_${key}: yes`),
                   ...Object.entries(this.plugins.options).filter(([key, value]) => value).filter(([key, value]) => this.plugins.enabled[key.split(".")[0]]).map(([key, value]) => `          plugin_${key.replace(/[.]/, "_")}: ${typeof value === "boolean" ? {true:"yes", false:"no"}[value] : value}`),
-                  ...Object.entries(this.config).filter(([key, value]) => value).map(([key, value]) => `          config_${key.replace(/[.]/, "_")}: ${typeof value === "boolean" ? {true:"yes", false:"no"}[value] : value}`),
+                  ...Object.entries(this.config).filter(([key, value]) => (value)&&(value !== metadata.core.web[key]?.defaulted)).map(([key, value]) => `          config_${key.replace(/[.]/, "_")}: ${typeof value === "boolean" ? {true:"yes", false:"no"}[value] : value}`),
                 ].sort(),
               ].join("\n")
             },
@@ -255,7 +191,7 @@
               this.templates.placeholder.timeout = setTimeout(async () => {
                 this.templates.placeholder.image = await placeholder(this)
                 this.generated.content = ""
-                this.generated.error = false
+                this.generated.error = null
               }, timeout)
             },
           //Resize mock image
@@ -277,9 +213,9 @@
                 try {
                   await axios.get(`/.uncache?&token=${(await axios.get(`/.uncache?user=${this.user}`)).data.token}`)
                   this.generated.content = (await axios.get(this.url)).data
-                  this.generated.error = false
-                } catch {
-                  this.generated.error = true
+                  this.generated.error = null
+                } catch (error) {
+                  this.generated.error = {code:error.response.status, message:error.response.data}
                 }
                 finally {
                   this.generated.pending = false
