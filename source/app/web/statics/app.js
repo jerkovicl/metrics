@@ -23,10 +23,6 @@
           //GitHub limit tracker
             const {data:requests} = await axios.get("/.requests")
             this.requests = requests
-            setInterval(async () => {
-              const {data:requests} = await axios.get("/.requests")
-              this.requests = requests
-            }, 15000)
           //Generate placeholder
             this.mock({timeout:200})
             setInterval(() => {
@@ -144,8 +140,8 @@
                 `  # Schedule updates (each hour)`,
                 `  schedule: [{cron: "0 * * * *"}]`,
                 `  # Lines below let you run workflow manually and on each commit`,
-                `  push: {branches: ["master", "main"]}`,
                 `  workflow_dispatch:`,
+                `  push: {branches: ["master", "main"]}`,
                 `jobs:`,
                 `  github-metrics:`,
                 `    runs-on: ubuntu-latest`,
@@ -154,8 +150,6 @@
                 `        with:`,
                 `          # Your GitHub token`,
                 `          token: ${"$"}{{ secrets.METRICS_TOKEN }}`,
-                `          # GITHUB_TOKEN is a special auto-generated token restricted to current repository, which is used to push files in it`,
-                `          committer_token: ${"$"}{{ secrets.GITHUB_TOKEN }}`,
                 ``,
                 `          # Options`,
                 `          user: ${this.user }`,
@@ -197,7 +191,7 @@
           //Resize mock image
             mockresize() {
               const svg = document.querySelector(".preview .image svg")
-              if (svg) {
+              if ((svg)&&(svg.getAttribute("height") === 99999)) {
                 const height = svg.querySelector("#metrics-end")?.getBoundingClientRect()?.y-svg.getBoundingClientRect()?.y
                 if (Number.isFinite(height))
                   svg.setAttribute("height", height)

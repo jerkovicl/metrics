@@ -241,11 +241,11 @@ Default exported function in `index.mjs` will receive the following inputs:
   - `imports.fs` for [NodeJS `fs` library](https://nodejs.org/api/fs.html)
   - `imports.paths` for [NodeJS `paths` library](https://nodejs.org/api/paths.html)
   - `imports.util` for [NodeJS `util` library](https://nodejs.org/api/util.html)
-  - `imports.imgb64` for [renanbastos93/image-to-base64](https://github.com/renanbastos93/image-to-base64)
   - `imports.axios` for [axios/axios](https://github.com/axios/axios)
   - `imports.puppeteer` for [puppeteer/puppeteer](https://github.com/puppeteer/puppeteer)
   - `imports.run` is an helper to run raw command
   - `imports.shuffle` is an helper to shuffle array
+  - `imports.imgb64` is an helper to download and resize an image into base64
   - `imports.__module` is an helper to find `__dirname` from a module `import.meta.url`
   - And more...
 - `data` and `computed`, with all data gathered from core and base
@@ -298,7 +298,7 @@ Here's an example:
 ```yaml
 name: "🧩 Plugin name (with emoji icon)"
 cost: Estimates how many GitHub requests is used during plugin execution ("N/A" for Third-Party services)
-categorie: github # Plugin categorie ("github", "social", "health" or "other")
+categorie: github # Plugin categorie ("github", "social" or "other")
 supports:
   - user          # Support users account
   - organization  # Support organizations account
@@ -500,8 +500,8 @@ Below is a list of used packages.
   * To render SVG images
 * [ptarjan/node-cache](https://github.com/ptarjan/node-cache)
   * To cache generated content
-* [renanbastos93/image-to-base64](https://github.com/renanbastos93/image-to-base64)
-  * To generate base64 representation of users' avatars
+* [oliver-moran/jimp](https://github.com/oliver-moran/jimp)
+  * To transform and generate base64 images
 * [svg/svgo](https://github.com/svg/svgo)
   * To optimize generated SVG
 * [axios/axios](https://github.com/axios/axios)
@@ -511,8 +511,8 @@ Below is a list of used packages.
 * [vuejs/vue](https://github.com/vuejs/vue) and [egoist/vue-prism-component](https://github.com/egoist/vue-prism-component) + [prismjs/prism](https://github.com/prismjs/prism)
   * To display server application
 * [puppeteer/puppeteer](https://github.com/puppeteer/puppeteer)
-  * To scrap the web
-* [libxmljs/libxmljs](https://github.com/libxmljs/libxmljs)
+  * To scrape the web
+* [marudor/libxmljs2](https://github.com/marudor/libxmljs2)
   * To test and verify SVG validity
 * [facebook/jest](https://github.com/facebook/jest) and [nodeca/js-yaml](https://github.com/nodeca/js-yaml)
   * For unit testing
@@ -522,6 +522,10 @@ Below is a list of used packages.
   * For simple git operations
 * [twitter/twemoji-parser](https://github.com/twitter/twemoji-parser)
   * To parse emojis and replace them by [twemojis](https://github.com/twitter/twemoji)
+* [jshemas/openGraphScraper](https://github.com/jshemas/openGraphScraper)
+  * To retrieve open graphs metadata
+* [panosoft/node-chartist](https://github.com/panosoft/node-chartist) and [gionkunz/chartist-js](https://github.com/gionkunz/chartist-js)
+  * To display embed SVG charts
 
 </details>
 

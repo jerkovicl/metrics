@@ -13,13 +13,18 @@
   "music",
   "nightscout",
   "posts",
+  "rss",
   "tweets",
   "isocalendar",
   "stars",
   "stargazers",
   "people",
   "activity",
+  "reactions",
   "anilist",
   "wakatime",
-  "skyline"
+  "skyline",
+  "stackoverflow",
+  "stock",
+  "achievements"
 ]
