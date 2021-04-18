@@ -22,7 +22,8 @@ inputs:
     description: Include forks in metrics
     default: no
   
-  # Filter repositories by user affiliations
+  # Filter repositories by user affiliations (you can specify multiple affiliations constraints)
+  # Set to "" to use all repositories related to you
   # Note that it may affect some plugin outputs (broad affiliations will result in less representative metrics)
   repositories_affiliations:
     description: Repositories affiliations
@@ -70,10 +71,28 @@ inputs:
     description: Commit message
     default: Update ${filename} - [Skip GitHub Action]
   
+  # Instead of saving metrics to a repository, it's possible to save them to a gist to avoid "commits pollution"
+  # Gist must be created prior and you must pass its identifier in the following option
+  # Set "gist" in "output_action" to use this option
+  committer_gist:
+    description: Gist used to store metrics
+    default: ""
+  
   # Rendered metrics output path, relative to repository's root
   filename:
     description: Rendered metrics output path
     default: github-metrics.svg
+  
+  # Rendered markdown output path (when using a markdown template)
+  # It can be either a local path or a link (e.g. raw.githubusercontent.com)
+  markdown:
+    description: Rendered markdown output path
+    default: TEMPLATE.md
+  
+  # Rendered markdown file cache (when using a markdown template)
+  markdown_cache:
+    description: Rendered markdown file cache
+    default: .cache
   
   # Output action
   output_action:
@@ -232,11 +251,18 @@ inputs:
     description: Repositories to skip
     default: ""
   
+  # Number of languages to display
+  # Set to 0 to disable limitations
+  plugin_languages_limit:
+    description: Maximum number of languages to display
+    default: 8
+  
   # Overrides default languages colors
   # Use `${n}:${color}` to change the color of the n-th most used language (e.g. "0:red" to make your most used language red)
   # Use `${language}:${color}` to change the color of named language (e.g. "javascript:red" to make JavaScript language red, language case is ignored)
   # Use a value from `colorsets.json` to use a predefined set of colors
   # Both hexadecimal and named colors are supported
+  # This cannot be used when "plugin_languages_limit" is greater than 8
   plugin_languages_colors:
     description: Custom languages colors
     default: github
@@ -605,6 +631,22 @@ inputs:
     default: ""
   
   # ====================================================================================
+  # 🎩 Notable contributions
+  
+  # Enable or disable plugin
+  plugin_notable:
+    description: Display notable contributions in organizations
+    default: no
+  
+  # ====================================================================================
+  # 💭 GitHub Community Support
+  
+  # Enable or disable plugin
+  plugin_support:
+    description: GitHub Community Support metrics
+    default: no
+  
+  # ====================================================================================
   # 🌇 GitHub Skyline 3D calendar
   
   # Enable or disable plugin
@@ -926,6 +968,34 @@ inputs:
   plugin_stock_interval:
     description: Time intervals between records
     default: 5m
+  
+  # ====================================================================================
+  # 📸 Website screenshot
+  
+  # Enable or disable plugin
+  plugin_screenshot:
+    description: Display a screenshot of any website
+    default: no
+  
+  # Screenshot title caption
+  plugin_screenshot_title:
+    description: Screenshot title caption
+    default: Screenshot
+  
+  # Website to take screenshot
+  plugin_screenshot_url:
+    description: Website to take screenshot
+    default: ""
+  
+  # Selector to take in screenshot
+  plugin_screenshot_selector:
+    description: Selector to take in screenshot
+    default: body
+  
+  # Display or remove default page background
+  plugin_screenshot_background:
+    description: Display or remove default page background
+    default: yes
   
   # ====================================================================================
   # 💉 Nightscout

@@ -32,7 +32,7 @@
 
 //Waiter
   async function wait(seconds) {
-    await new Promise(solve => setTimeout(solve, seconds*1000)) //eslint-disable-line no-promise-executor-return
+    await new Promise(solve => setTimeout(solve, seconds*1000))
   }
 
 //Runner
@@ -67,7 +67,7 @@
             filename, optimize, verify,
             debug, "debug.flags":dflags, "use.mocked.data":mocked, dryrun,
             "plugins.errors.fatal":die,
-            "committer.token":_token, "committer.branch":_branch, "committer.message":_message,
+            "committer.token":_token, "committer.branch":_branch, "committer.message":_message, "committer.gist":_gist,
             "use.prebuilt.image":_image,
             retries, "retries.delay":retries_delay,
             "output.action":_action,
@@ -91,7 +91,7 @@
         //Token for data gathering
           info("GitHub token", token, {token:true})
           if (!token)
-            throw new Error('You must provide a valid GitHub personal token to gather your metrics (see "How to setup?" section at https://github.com/lowlighter/metrics#%EF%B8%8F-using-github-action-on-your-profile-repository-5-min-setup)')
+            throw new Error("You must provide a valid GitHub personal token to gather your metrics (see https://github.com/lowlighter/metrics/blob/master/.github/readme/partials/setup/action/setup.md for more informations)")
           conf.settings.token = token
           const api = {}
           api.graphql = octokit.graphql.defaults({headers:{authorization:`token ${token}`}})
@@ -102,6 +102,13 @@
           if (mocked) {
             Object.assign(api, await mocks(api))
             info("Use mocked API", true)
+          }
+        //Test token validity
+          else if (!/^NOT_NEEDED$/.test(token)) {
+            const {headers} = await api.rest.request("HEAD /")
+            if (!("x-oauth-scopes" in headers))
+              throw new Error("GitHub API did not send any \"x-oauth-scopes\" header back from provided \"token\". It means that your token may not be valid or you're using GITHUB_TOKEN which cannot be used since metrics will fetch data outside of this repository scope. Use a personal access token instead (see https://github.com/lowlighter/metrics/blob/master/.github/readme/partials/setup/action/setup.md for more informations).")
+            info("Token validity", "seems ok")
           }
         //Extract octokits
           const {graphql, rest} = api
@@ -115,6 +122,7 @@
             authenticated = github.context.repo.owner
           }
           const user = _user || authenticated
+          conf.authenticated = user
           info("GitHub account", user)
           if (q.repo)
             info("GitHub repository", `${user}/${q.repo}`)
@@ -127,6 +135,7 @@
           if (!dryrun) {
             //Compute committer informations
               committer.token = _token || token
+              committer.gist = _action === "gist" ? _gist : null
               committer.commit = true
               committer.message = _message.replace(/[$][{]filename[}]/g, filename)
               committer.pr = /^pull-request/.test(_action)
@@ -138,6 +147,9 @@
                 throw new Error("You must provide a valid GitHub token to commit your metrics")
               info("Committer branch", committer.branch)
               info("Committer head branch", committer.head)
+            //Gist
+              if (committer.gist)
+                info("Committer Gist id", committer.gist)
             //Instantiate API for committer
               committer.rest = github.getOctokit(committer.token)
               info("Committer REST API", "ok")
@@ -200,7 +212,7 @@
           info.break()
           info.group({metadata, name:"core", inputs:config})
           info("Plugin errors", die ? "(exit with error)" : "(displayed in generated image)")
-          const convert = ["jpeg", "png", "json"].includes(config["config.output"]) ? config["config.output"] : null
+          const convert = ["jpeg", "png", "json", "markdown"].includes(config["config.output"]) ? config["config.output"] : null
           Object.assign(q, config)
 
         //Base content
@@ -277,6 +289,13 @@
               info(`Commit to branch ${committer.branch}`, "(no changes)")
               committer.commit = false
             }
+          }
+
+        //Upload to gist (this is done as user since committer_token may not have gist rights)
+          if (committer.gist) {
+            await rest.gists.update({gist_id:committer.gist, files:{[filename]:{content:rendered}}})
+            info(`Upload to gist ${committer.gist}`, "ok")
+            committer.commit = false
           }
 
         //Commit metrics
