@@ -55,6 +55,25 @@ Some templates may accept additional custom options that you can pass through th
     query: '{"custom_colo r":"#FF0000"}'
 ```
 
+### 🎨 Custom CSS styling
+
+You can inject CSS rules using `extras_css` option.
+
+If you make heavy use of this option, consider using [community templates](/source/templates/community/README.md) instead.
+
+#### ℹ️ Examples workflows
+
+```yaml
+- uses: lowlighter/metrics@latest
+  with:
+    # ... other options
+    base: header
+    extras_css: |
+      h2 {
+        color: red;
+      }
+```
+
 ### 🌐 Set timezone
 
 By default, dates are based on Greenwich meridian (GMT/UTC).
@@ -218,6 +237,21 @@ It could then be processed for other usages.
   with:
     # ... other options
     config_output: png
+```
+
+### 🖨️ Convert output to PDF
+
+It is possible to convert output to PDF when using a markdown template by setting `config_output` to `markdown-pdf`.
+
+#### ℹ️ Examples workflows
+
+```yaml
+- uses: lowlighter/metrics@latest
+  with:
+    # ... other options
+    markdown: template.md
+    markdown_cache: .cache
+    config_output: markdown-pdf
 ```
 
 ### 🐳 Faster execution with prebuilt docker images

@@ -5,8 +5,6 @@
 Generate your metrics that you can embed everywhere, including your GitHub profile readme! It works for both user and organization accounts, and even for repositories!
 
 
-> <sup>*⚠️ This is the documentation of **v3.8-beta** (`@master` branch) which includes [unreleased features](https://github.com/lowlighter/metrics/compare/latest...master), see documentation of [**v3.7** (`@latest` branch) here](https://github.com/lowlighter/metrics/blob/latest/README.md).*</sup>
-
 
 <table>
   <tr>
@@ -147,6 +145,9 @@ And you can customize these heavily with plugins, templates and hundreds of opti
     </td>
     <td align="center">
       <img alt="" width="400" src="https://github.com/lowlighter/lowlighter/blob/master/metrics.plugin.followup.svg">
+      <details><summary>Created by user version</summary>
+        <img alt="" width="400" src="https://github.com/lowlighter/lowlighter/blob/master/metrics.plugin.followup.user.svg">
+      </details>
       <img width="900" height="1" alt="">
     </td>
   </tr>
@@ -198,6 +199,9 @@ And you can customize these heavily with plugins, templates and hundreds of opti
   <tr>
     <td align="center">
       <img alt="" width="400" src="https://github.com/lowlighter/lowlighter/blob/master/metrics.plugin.notable.svg">
+      <details open><summary>With repository name</summary>
+        <img alt="" width="400" src="https://github.com/lowlighter/lowlighter/blob/master/metrics.plugin.notable.repositories.svg">
+      </details>
       <img width="900" height="1" alt="">
     </td>
     <td align="center">
@@ -327,8 +331,8 @@ And you can customize these heavily with plugins, templates and hundreds of opti
     </th>
   </tr>
   <tr>
-    <th><a href="source/templates/classic/README.md">📗 Classic</a></th>
-    <th><a href="source/templates/repository/README.md">📘 Repository</a></th>
+    <th><a href="source/templates/classic/README.md">📗 Classic template</a></th>
+    <th><a href="source/templates/repository/README.md">📘 Repository template</a></th>
   </tr>
   <tr>
     <td align="center">
@@ -341,8 +345,8 @@ And you can customize these heavily with plugins, templates and hundreds of opti
     </td>
   </tr>
   <tr>
-    <th><a href="source/templates/terminal/README.md">📙 Terminal</a></th>
-    <th><a href="source/templates/markdown/README.md">📒 Markdown</a></th>
+    <th><a href="source/templates/terminal/README.md">📙 Terminal template</a></th>
+    <th><a href="source/templates/markdown/README.md">📒 Markdown template</a></th>
   </tr>
   <tr>
     <td align="center">
@@ -706,7 +710,7 @@ https://my-personal-domain.com/my-github-user?base=0&base.repositories=1
     <th nowrap="nowrap" align="center" title="💉 Nightscout">💉</th>
   </tr>  
   <tr>
-    <td nowrap="nowrap">📗 Classic</td>    
+    <td nowrap="nowrap">📗 Classic template</td>    
     <td nowrap="nowrap" align="center" data-plugin="base">✔️</td>
     <td nowrap="nowrap" align="center" data-plugin="isocalendar">✔️</td>
     <td nowrap="nowrap" align="center" data-plugin="languages">✔️</td>
@@ -742,7 +746,7 @@ https://my-personal-domain.com/my-github-user?base=0&base.repositories=1
     <td nowrap="nowrap" align="center" data-plugin="nightscout">✔️</td>
   </tr>
   <tr>
-    <td nowrap="nowrap">📘 Repository</td>    
+    <td nowrap="nowrap">📘 Repository template</td>    
     <td nowrap="nowrap" align="center" data-plugin="base">✔️</td>
     <td nowrap="nowrap" align="center" data-plugin="isocalendar">❌</td>
     <td nowrap="nowrap" align="center" data-plugin="languages">✔️</td>
@@ -778,7 +782,7 @@ https://my-personal-domain.com/my-github-user?base=0&base.repositories=1
     <td nowrap="nowrap" align="center" data-plugin="nightscout">❌</td>
   </tr>
   <tr>
-    <td nowrap="nowrap">📙 Terminal</td>    
+    <td nowrap="nowrap">📙 Terminal template</td>    
     <td nowrap="nowrap" align="center" data-plugin="base">✔️</td>
     <td nowrap="nowrap" align="center" data-plugin="isocalendar">❌</td>
     <td nowrap="nowrap" align="center" data-plugin="languages">✔️</td>
@@ -814,7 +818,7 @@ https://my-personal-domain.com/my-github-user?base=0&base.repositories=1
     <td nowrap="nowrap" align="center" data-plugin="nightscout">❌</td>
   </tr>
   <tr>
-    <td nowrap="nowrap">📒 Markdown</td>    
+    <td nowrap="nowrap">📒 Markdown template</td>    
     <td nowrap="nowrap" align="center" data-plugin="base">✔️</td>
     <td nowrap="nowrap" align="center" data-plugin="isocalendar">❌</td>
     <td nowrap="nowrap" align="center" data-plugin="languages">❌</td>
@@ -998,15 +1002,16 @@ https://my-personal-domain.com/my-github-user?base=0&base.repositories=1
   </tr>
 </table>
 
+*Note: **markdown template** can actually render any kind of SVG metrics using [`embed` function](https://github.com/lowlighter/metrics/blob/master/source/templates/markdown/example.md#embedding-svg-metrics)*
 ## 🖼️ Templates
 
 Templates lets you change general appearance of rendered metrics.
 See their respective documentation for more informations about how to setup them:
 
-* [📗 Classic](/source/templates/classic/README.md)
-* [📘 Repository](/source/templates/repository/README.md)
-* [📙 Terminal](/source/templates/terminal/README.md)
-* [📒 Markdown](/source/templates/markdown/README.md)
+* [📗 Classic template](/source/templates/classic/README.md)
+* [📘 Repository template](/source/templates/repository/README.md)
+* [📙 Terminal template](/source/templates/terminal/README.md)
+* [📒 Markdown template](/source/templates/markdown/README.md)
 * [📕 Community templates](/source/templates/community/README.md)
 
 ## 🧩 Plugins
@@ -1131,7 +1136,7 @@ See full license in [LICENSE.md](/LICENSE.md)
 
 ![Sponsors](https://github.com/lowlighter/lowlighter/blob/master/metrics.sponsors.svg)
 
-[`♥️ Become a sponsor`](https://www.buymeacoffee.com/lowlighter)
+[`♥️ Become a sponsor`](https://github.com/sponsors/lowlighter)
 
 ## 📖 Useful references
 

@@ -1,4 +1,4 @@
-### 📒 Markdown
+### 📒 Markdown template
 
 Markdown template can render a **markdown template** by interpreting **templating brackets** `{{` and `}}`.
 
@@ -12,7 +12,7 @@ Markdown template can render a **markdown template** by interpreting **templatin
 It can be used to render custom markdown which include data gathered by metrics.
 Unlike SVG templates, it is possible to include revelant hyperlinks since it'll be rendered as regular markdown.
 
-You can even mix it with SVG plugins for even more customization.
+You can even mix it with SVG plugins for even more customization using `embed` function.
 
 See [example.md](/source/templates/markdown/example.md) for a markdown template example.
 
@@ -24,13 +24,27 @@ For convenience, several useful properties are aliased in [/source/templates/mar
 
 #### ℹ️ Examples workflows
 
+[➡️ Supported formats and inputs](metadata.yml)
+
 ```yaml
+# Markdown output
 - uses: lowlighter/metrics@latest
   with:
     # ... other options
     template: markdown
-    filename: README.md      # Output file
-    markdown: TEMPLATE.md    # Template file
-    markdown_cache: .cache   # Cache folder
-    config_output: markdown  # Output as markdown file
+    filename: README.md         # Output file
+    markdown: TEMPLATE.md       # Template file
+    markdown_cache: .cache      # Cache folder
+```
+
+```yaml
+# PDF output
+- uses: lowlighter/metrics@latest
+  with:
+    # ... other options
+    template: markdown
+    filename: render.pdf        # Output file
+    markdown: TEMPLATE.md       # Template file
+    markdown_cache: .cache      # Cache folder
+    config_output: markdown-pdf # Output as pdf file
 ```
