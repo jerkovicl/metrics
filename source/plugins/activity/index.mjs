@@ -15,15 +15,25 @@ export default async function({login, data, rest, q, account, imports}, {enabled
     }
 
     //Load inputs
-    let {limit, days, filter, visibility, timestamps, skipped} = imports.metadata.plugins.activity.inputs({data, q, account})
+    let {limit, load, days, filter, visibility, timestamps, skipped} = imports.metadata.plugins.activity.inputs({data, q, account})
     if (!days)
       days = Infinity
     skipped.push(...data.shared["repositories.skipped"])
+    const pages = Math.ceil(load / 100)
     const codelines = 2
 
     //Get user recent activity
     console.debug(`metrics/compute/${login}/plugins > activity > querying api`)
-    const {data:events} = context.mode === "repository" ? await rest.activity.listRepoEvents({owner:context.owner, repo:context.repo}) : await rest.activity.listEventsForAuthenticatedUser({username:login, per_page:100})
+    const events = []
+    try {
+      for (let page = 1; page <= pages; page++) {
+        console.debug(`metrics/compute/${login}/plugins > activity > loading page ${page}/${pages}`)
+        events.push(...(context.mode === "repository" ? await rest.activity.listRepoEvents({owner:context.owner, repo:context.repo}) : await rest.activity.listEventsForAuthenticatedUser({username:login, per_page:100, page})).data)
+      }
+    }
+    catch {
+      console.debug(`metrics/compute/${login}/plugins > activity > no more page to load`)
+    }
     console.debug(`metrics/compute/${login}/plugins > activity > ${events.length} events loaded`)
 
     //Extract activity events
@@ -57,7 +67,8 @@ export default async function({login, data, rest, q, account, imports}, {enabled
             }
             //Forked repository
             case "ForkEvent": {
-              return {type:"fork", actor, timestamp, repo}
+              const {forkee:{full_name:forked}} = payload
+              return {type:"fork", actor, timestamp, repo, forked}
             }
             //Wiki editions
             case "GollumEvent": {
@@ -111,16 +122,16 @@ export default async function({login, data, rest, q, account, imports}, {enabled
             //Pushed commits
             case "PushEvent": {
               let {size, commits, ref} = payload
-              if (commits[commits.length - 1].message.startsWith("Merge branch "))
-                commits = [commits[commits.length - 1]]
+              if (commits.slice(-1).pop()?.message.startsWith("Merge branch "))
+                commits = commits.slice(-1)
               return {type:"push", actor, timestamp, repo, size, branch:ref.match(/refs.heads.(?<branch>.*)/)?.groups?.branch ?? null, commits:commits.reverse().map(({sha, message}) => ({sha:sha.substring(0, 7), message}))}
             }
             //Released
             case "ReleaseEvent": {
               if (!["published"].includes(payload.action))
                 return null
-              const {action, release:{name, prerelease, draft, body:content}} = payload
-              return {type:"release", actor, timestamp, repo, action, name, prerelease, draft, content:await imports.markdown(content, {mode:markdown, codelines})}
+              const {action, release:{name, tag_name, prerelease, draft, body:content}} = payload
+              return {type:"release", actor, timestamp, repo, action, name:name || tag_name, prerelease, draft, content:await imports.markdown(content, {mode:markdown, codelines})}
             }
             //Starred a repository
             case "WatchEvent": {
