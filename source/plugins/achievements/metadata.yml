@@ -1,6 +1,6 @@
 name: "🏆 Achievements"
 cost: ~5 GraphQL request
-categorie: github
+category: github
 index: 17
 supports:
   - user
@@ -19,6 +19,7 @@ inputs:
     type: string
     default: C
     values:
+      - S
       - A
       - B
       - C
@@ -29,6 +30,15 @@ inputs:
     description: Display unlocked secrets achievements
     type: boolean
     default: yes
+
+  # Achievements display style
+  plugin_achievements_display:
+    description: Achievements display style
+    type: string
+    default: detailed
+    values:
+      - detailed  # Detailed display
+      - compact   # Compact display (only icon, name and value are displayed)
 
   # Number of achievements events to display
   # Set to 0 to disable limitations

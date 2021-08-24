@@ -20,10 +20,14 @@ import git from "simple-git"
 import twemojis from "twemoji-parser"
 import url from "url"
 import util from "util"
+import fetch from "node-fetch"
+import readline from "readline"
+import emoji from "emoji-name-map"
+import minimatch from "minimatch"
 prism_lang()
 
 //Exports
-export {axios, fs, git, jimp, opengraph, os, paths, processes, rss, url, util}
+export {axios, fs, git, jimp, opengraph, os, paths, processes, rss, url, fetch, util, emoji, minimatch}
 
 /**Returns module __dirname */
 export function __module(module) {
@@ -48,51 +52,67 @@ export function s(value, end = "") {
   return value !== 1 ? {y:"ies", "":"s"}[end] : end
 }
 
-/**Formatter */
-export function format(n, {sign = false, unit = true, fixed} = {}) {
-  if (unit) {
-    for (const {u, v} of [{u:"b", v:10 ** 9}, {u:"m", v:10 ** 6}, {u:"k", v:10 ** 3}]) {
-      if (n / v >= 1)
-        return `${(sign) && (n > 0) ? "+" : ""}${(n / v).toFixed(fixed ?? 2).substr(0, 4).replace(/[.]0*$/, "")}${u}`
+/**Formatters */
+export function formatters({timeZone} = {}) {
+  //Check options
+  try {
+    new Date().toLocaleString("fr", {timeZoneName:"short", timeZone})
+  }
+  catch {
+    timeZone = undefined
+  }
+
+  /**Formatter */
+  const format = function(n, {sign = false, unit = true, fixed} = {}) {
+    if (unit) {
+      for (const {u, v} of [{u:"b", v:10 ** 9}, {u:"m", v:10 ** 6}, {u:"k", v:10 ** 3}]) {
+        if (n / v >= 1)
+          return `${(sign) && (n > 0) ? "+" : ""}${(n / v).toFixed(fixed ?? 2).substr(0, 4).replace(/[.]0*$/, "")}${u}`
+      }
     }
+    return `${(sign) && (n > 0) ? "+" : ""}${fixed ? n.toFixed(fixed) : n}`
   }
-  return `${(sign) && (n > 0) ? "+" : ""}${fixed ? n.toFixed(fixed) : n}`
-}
 
-/**Bytes formatter */
-export function bytes(n) {
-  for (const {u, v} of [{u:"E", v:10 ** 18}, {u:"P", v:10 ** 15}, {u:"T", v:10 ** 12}, {u:"G", v:10 ** 9}, {u:"M", v:10 ** 6}, {u:"k", v:10 ** 3}]) {
-    if (n / v >= 1)
-      return `${(n / v).toFixed(2).substr(0, 4).replace(/[.]0*$/, "")} ${u}B`
+  /**Bytes formatter */
+  format.bytes = function (n) {
+    for (const {u, v} of [{u:"E", v:10 ** 18}, {u:"P", v:10 ** 15}, {u:"T", v:10 ** 12}, {u:"G", v:10 ** 9}, {u:"M", v:10 ** 6}, {u:"k", v:10 ** 3}]) {
+      if (n / v >= 1)
+        return `${(n / v).toFixed(2).substr(0, 4).replace(/[.]0*$/, "")} ${u}B`
+    }
+    return `${n} byte${n > 1 ? "s" : ""}`
   }
-  return `${n} byte${n > 1 ? "s" : ""}`
-}
-format.bytes = bytes
 
-/**Percentage formatter */
-export function percentage(n, {rescale = true} = {}) {
-  return `${
-    (n * (rescale ? 100 : 1)).toFixed(2)
-      .replace(/(?<=[.])(?<decimal>[1-9]*)0+$/, "$<decimal>")
-      .replace(/[.]$/, "")
-  }%`
-}
-format.percentage = percentage
+  /**Percentage formatter */
+  format.percentage = function (n, {rescale = true} = {}) {
+    return `${
+      (n * (rescale ? 100 : 1)).toFixed(2)
+        .replace(/(?<=[.])(?<decimal>[1-9]*)0+$/, "$<decimal>")
+        .replace(/[.]$/, "")
+    }%`
+  }
 
-/**Text ellipsis formatter */
-export function ellipsis(text, {length = 20} = {}) {
-  text = `${text}`
-  if (text.length < length)
-    return text
-  return `${text.substring(0, length)}…`
-}
-format.ellipsis = ellipsis
+  /**Text ellipsis formatter */
+  format.ellipsis = function(text, {length = 20} = {}) {
+    text = `${text}`
+    if (text.length < length)
+      return text
+    return `${text.substring(0, length)}…`
+  }
 
-/**Date formatter */
-export function date(string, options) {
-  return new Intl.DateTimeFormat("en-GB", options).format(new Date(string))
+  /**Date formatter */
+  format.date = function(string, options) {
+    return new Intl.DateTimeFormat("en-GB", {timeZone, ...options}).format(new Date(string))
+  }
+
+  /**License formatter */
+  format.license = function(license) {
+    if (license.spdxId === "NOASSERTION")
+      return license.name
+    return license.nickname ?? license.spdxId ?? license.name
+  }
+
+  return {format}
 }
-format.date = date
 
 /**Array shuffler */
 export function shuffle(array) {
@@ -130,21 +150,47 @@ export async function chartist() {
     .replace(/class="ct-chart-line">/, `class="ct-chart-line">${css}`)
 }
 
-/**Run command */
-export async function run(command, options, {prefixed = true} = {}) {
+/**Run command (use this to execute commands and process whole output at once, may not be suitable for large outputs) */
+export async function run(command, options, {prefixed = true, log = true} = {}) {
   const prefix = {win32:"wsl"}[process.platform] ?? ""
   command = `${prefixed ? prefix : ""} ${command}`.trim()
   return new Promise((solve, reject) => {
-    console.debug(`metrics/command > ${command}`)
+    console.debug(`metrics/command/run > ${command}`)
     const child = processes.exec(command, options)
     let [stdout, stderr] = ["", ""]
     child.stdout.on("data", data => stdout += data)
     child.stderr.on("data", data => stderr += data)
     child.on("close", code => {
-      console.debug(`metrics/command > ${command} > exited with code ${code}`)
-      console.debug(stdout)
-      console.debug(stderr)
+      console.debug(`metrics/command/run > ${command} > exited with code ${code}`)
+      if (log) {
+        console.debug(stdout)
+        console.debug(stderr)
+      }
       return code === 0 ? solve(stdout) : reject(stderr)
+    })
+  })
+}
+
+/**Spawn command (use this to execute commands and process output on the fly) */
+export async function spawn(command, args = [], options = {}, {prefixed = true, timeout = 300*1000, stdout} = {}) { //eslint-disable-line max-params
+  const prefix = {win32:"wsl"}[process.platform] ?? ""
+  if ((prefixed)&&(prefix)) {
+    args.unshift(command)
+    command = prefix
+  }
+  if (!stdout)
+    throw new Error("`stdout` argument was not provided, use run() instead of spawn() if processing output is not needed")
+  return new Promise((solve, reject) => {
+    console.debug(`metrics/command/spawn > ${command} with ${args.join(" ")}`)
+    const child = processes.spawn(command, args, {...options, shell:true, timeout})
+    const reader = readline.createInterface({input:child.stdout})
+    reader.on("line", stdout)
+    const closed = new Promise(close => reader.on("close", close))
+    child.on("close", async code => {
+      console.debug(`metrics/command/spawn > ${command} with ${args.join(" ")} > exited with code ${code}`)
+      await closed
+      console.debug(`metrics/command/spawn > ${command} with ${args.join(" ")} > reader closed`)
+      return code === 0 ? solve() : reject()
     })
   })
 }
@@ -262,12 +308,14 @@ export const svg = {
     page.on("console", ({_text:text}) => console.debug(`metrics/svg/pdf > puppeteer > ${text}`))
     await page.setContent(`<main class="markdown-body">${rendered}</main>`, {waitUntil:["load", "domcontentloaded", "networkidle2"]})
     console.debug("metrics/svg/pdf > loaded svg successfully")
+    const margins = (Array.isArray(paddings) ? paddings : paddings.split(",")).join(" ")
+    console.debug(`metrics/svg/pdf > margins set to ${margins}`)
     await page.addStyleTag({
       content:`
-            main { margin: ${(Array.isArray(paddings) ? paddings : paddings.split(",")).join(" ")}; }
-            main svg { height: 1em; width: 1em; }
-            ${await fs.readFile(paths.join(__module(import.meta.url), "../../../node_modules", "@primer/css/dist/markdown.css")).catch(_ => "")}${style}
-          `,
+        main { margin: ${margins}; }
+        main svg { height: 1em; width: 1em; }
+        ${await fs.readFile(paths.join(__module(import.meta.url), "../../../node_modules", "@primer/css/dist/markdown.css")).catch(_ => "")}${style}
+      `,
     })
     rendered = await page.pdf()
     //Result
@@ -283,16 +331,23 @@ export const svg = {
       console.debug(`metrics/svg/resize > started ${await svg.resize.browser.version()}`)
     }
     //Format padding
-    const [pw = 1, ph] = (Array.isArray(paddings) ? paddings : `${paddings}`.split(",").map(x => x.trim())).map(padding => `${padding}`.substring(0, padding.length - 1)).map(value => 1 + Number(value) / 100)
-    const padding = {width:pw, height:(ph ?? pw)}
-    if (!Number.isFinite(padding.width))
-      padding.width = 1
-    if (!Number.isFinite(padding.height))
-      padding.height = 1
-    console.debug(`metrics/svg/resize > padding width*${padding.width}, height*${padding.height}`)
+    const padding = {width:1, height:1, absolute:{width:0, height:0}}
+    paddings = Array.isArray(paddings) ? paddings : `${paddings}`.split(",").map(x => x.trim())
+    for (const [i, dimension] of [[0, "width"], [1, "height"]]) {
+      let operands = (paddings?.[i] ?? paddings[0])
+      let {relative} = operands.match(/(?<relative>[+-]?[\d.]+)%$/)?.groups ?? {}
+      operands = operands.replace(relative, "").trim()
+      let {absolute} = operands.match(/^(?<absolute>[+-]?[\d.]+)/)?.groups ?? {}
+      if (Number.isFinite(Number(absolute)))
+        padding.absolute[dimension] = Number(absolute)
+      if (Number.isFinite(Number(relative)))
+        padding[dimension] = 1 + Number(relative/100)
+    }
+    console.debug(`metrics/svg/resize > padding width*${padding.width}+${padding.absolute.width}, height*${padding.height}+${padding.absolute.height}`)
     //Render through browser and resize height
     console.debug("metrics/svg/resize > loading svg")
     const page = await svg.resize.browser.newPage()
+    page.setViewport({width:980, height:980})
     page.on("console", ({_text:text}) => console.debug(`metrics/svg/resize > puppeteer > ${text}`))
     await page.setContent(rendered, {waitUntil:["load", "domcontentloaded", "networkidle2"]})
     console.debug("metrics/svg/resize > loaded svg successfully")
@@ -311,11 +366,14 @@ export const svg = {
         //Get bounds and resize
         let {y:height, width} = document.querySelector("svg #metrics-end").getBoundingClientRect()
         console.debug(`bounds width=${width}, height=${height}`)
-        height = Math.ceil(height * padding.height)
-        width = Math.ceil(width * padding.width)
-        console.debug(`bounds after applying padding width=${width} (*${padding.width}), height=${height} (*${padding.height})`)
+        height = Math.ceil(height * padding.height + padding.absolute.height)
+        width = Math.ceil(width * padding.width + padding.absolute.width)
+        console.debug(`bounds after applying padding width=${width} (*${padding.width}+${padding.absolute.width}), height=${height} (*${padding.height}+${padding.absolute.height})`)
         //Resize svg
-        document.querySelector("svg").setAttribute("height", height)
+        if (document.querySelector("svg").getAttribute("height") === "auto")
+          console.debug("skipped height resizing because it was set to \"auto\"")
+        else
+          document.querySelector("svg").setAttribute("height", height)
         //Enable animations
         if (animated)
           document.querySelector("svg").classList.remove("no-animations")

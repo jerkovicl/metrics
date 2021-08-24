@@ -6,21 +6,22 @@
 //Setup
 export default async function({login, q}, {conf, data, rest, graphql, plugins, queries, account, convert, template}, {pending, imports}) {
   //Load inputs
-  const {"config.animations":animations, "config.timezone":_timezone, "debug.flags":dflags} = imports.metadata.plugins.core.inputs({data, account, q})
+  const {"config.animations":animations, "config.display":display, "config.timezone":_timezone, "debug.flags":dflags} = imports.metadata.plugins.core.inputs({data, account, q})
   imports.metadata.templates[template].check({q, account, format:convert})
 
   //Init
-  const computed = {commits:0, sponsorships:0, licenses:{favorite:"", used:{}}, token:{}, repositories:{watchers:0, stargazers:0, issues_open:0, issues_closed:0, pr_open:0, pr_closed:0, pr_merged:0, forks:0, forked:0, releases:0}}
+  const computed = {commits:0, sponsorships:0, licenses:{favorite:"", used:{}, about:{}}, token:{}, repositories:{watchers:0, stargazers:0, issues_open:0, issues_closed:0, pr_open:0, pr_closed:0, pr_merged:0, forks:0, forked:0, releases:0, deployments:0, environments:0}}
   const avatar = imports.imgb64(data.user.avatarUrl)
   data.computed = computed
   console.debug(`metrics/compute/${login} > formatting common metrics`)
 
   //Timezone config
+  const offset = Number(new Date().toLocaleString("fr", {timeZoneName:"short"}).match(/UTC[+](?<offset>\d+)/)?.groups?.offset * 60 * 60 * 1000) || 0
   if (_timezone) {
     const timezone = {name:_timezone, offset:0}
     data.config.timezone = timezone
     try {
-      timezone.offset = Number(new Date().toLocaleString("fr", {timeZoneName:"short", timeZone:timezone.name}).match(/UTC[+](?<offset>\d+)/)?.groups?.offset * 60 * 60 * 1000) || 0
+      timezone.offset = offset - (Number(new Date().toLocaleString("fr", {timeZoneName:"short", timeZone:timezone.name}).match(/UTC[+](?<offset>\d+)/)?.groups?.offset * 60 * 60 * 1000) || 0)
       console.debug(`metrics/compute/${login} > timezone set to ${timezone.name} (${timezone.offset > 0 ? "+" : ""}${Math.round(timezone.offset / (60 * 60 * 1000))} hours)`)
     }
     catch {
@@ -28,6 +29,12 @@ export default async function({login, q}, {conf, data, rest, graphql, plugins, q
       console.debug(`metrics/compute/${login} > failed to use timezone "${timezone.name}"`)
     }
   }
+  else if (process?.env?.TZ)
+    data.config.timezone = {name:process.env.TZ, offset}
+
+  //Display
+  data.large = display === "large"
+  data.columns = display === "columns"
 
   //Animations
   data.animated = animations
@@ -40,7 +47,7 @@ export default async function({login, q}, {conf, data, rest, graphql, plugins, q
     pending.push((async () => {
       try {
         console.debug(`metrics/compute/${login}/plugins > ${name} > started`)
-        data.plugins[name] = await imports.plugins[name]({login, q, imports, data, computed, rest, graphql, queries, account}, plugins[name])
+        data.plugins[name] = await imports.plugins[name]({login, q, imports, data, computed, rest, graphql, queries, account}, {...plugins[name], extras:conf.settings?.extras?.features ?? conf.settings?.extras?.default ?? false})
         console.debug(`metrics/compute/${login}/plugins > ${name} > completed`)
       }
       catch (error) {
@@ -58,19 +65,21 @@ export default async function({login, q}, {conf, data, rest, graphql, plugins, q
   //Iterate through user's repositories
   for (const repository of data.user.repositories.nodes) {
     //Simple properties with totalCount
-    for (const property of ["watchers", "stargazers", "issues_open", "issues_closed", "pr_open", "pr_closed", "pr_merged", "releases"])
-      computed.repositories[property] += repository[property].totalCount
+    for (const property of ["watchers", "stargazers", "issues_open", "issues_closed", "pr_open", "pr_closed", "pr_merged", "releases", "deployments", "environments"])
+      computed.repositories[property] += repository[property]?.totalCount ?? 0
     //Forks
     computed.repositories.forks += repository.forkCount
     if (repository.isFork)
       computed.repositories.forked++
     //License
-    if (repository.licenseInfo)
+    if (repository.licenseInfo) {
       computed.licenses.used[repository.licenseInfo.spdxId] = (computed.licenses.used[repository.licenseInfo.spdxId] ?? 0) + 1
+      computed.licenses.about[repository.licenseInfo.spdxId] = repository.licenseInfo
+    }
   }
 
   //Total disk usage
-  computed.diskUsage = `${imports.bytes(data.user.repositories.totalDiskUsage * 1000)}`
+  computed.diskUsage = `${imports.format.bytes(data.user.repositories.totalDiskUsage * 1000)}`
 
   //Compute licenses stats
   computed.licenses.favorite = Object.entries(computed.licenses.used).sort(([_an, a], [_bn, b]) => b - a).slice(0, 1).map(([name, _value]) => name) ?? ""
@@ -87,7 +96,7 @@ export default async function({login, q}, {conf, data, rest, graphql, plugins, q
   computed.cakeday = years > 1 ? [new Date(), new Date(data.user.createdAt)].map(date => date.toISOString().match(/(?<mmdd>\d{2}-\d{2})(?=T)/)?.groups?.mmdd).every((v, _, a) => v === a[0]) : false
 
   //Compute calendar
-  computed.calendar = data.user.calendar.contributionCalendar.weeks.flatMap(({contributionDays}) => contributionDays).slice(0, 14).reverse()
+  computed.calendar = data.user.calendar.contributionCalendar.weeks.flatMap(({contributionDays}) => contributionDays).slice(-14)
 
   //Avatar (base64)
   computed.avatar = await avatar || "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
@@ -102,7 +111,11 @@ export default async function({login, q}, {conf, data, rest, graphql, plugins, q
   }
 
   //Meta
-  data.meta = {version:conf.package.version, author:conf.package.author}
+  data.meta = {
+    version:conf.package.version,
+    author:conf.package.author,
+    generated:imports.format.date(new Date(), {dateStyle:"short", timeStyle:"short"})
+  }
 
   //Debug flags
   if (dflags.includes("--cakeday")) {

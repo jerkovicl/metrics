@@ -21,6 +21,8 @@ Use a full `repo` scope token to access **private** events.
 
 By default, dates use Greenwich meridian (GMT/UTC). Be sure to set your timezone (see [here](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) for a list of supported timezones) for accurate metrics.
 
+> 🔣 On web instances, *recent languages activity* is an extra feature and must be enabled globally in `settings.json`
+
 #### ℹ️ Examples workflows
 
 [➡️ Available options for this plugin](metadata.yml)
@@ -34,5 +36,6 @@ By default, dates use Greenwich meridian (GMT/UTC). Be sure to set your timezone
     plugin_habits_days: 14        # Keep only events from last 14 days
     plugin_habits_facts: yes      # Display facts section
     plugin_habits_charts: yes     # Display charts section
+    plugin_habits_trim: yes       # Trim unused hours on daily chart
     config_timezone: Europe/Paris # Set timezone
 ```

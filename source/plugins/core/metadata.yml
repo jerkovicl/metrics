@@ -1,6 +1,6 @@
 name: "🧱 Core"
 cost: N/A
-categorie: core
+category: core
 supports:
   - user
   - organization
@@ -167,6 +167,16 @@ inputs:
     type: boolean
     default: yes
 
+  # Render display width
+  config_display:
+    description: Render display width
+    type: string
+    default: regular
+    values:
+      - regular  # 480px width
+      - large    # 960px width (may not be supported by all templates)
+      - columns  # Full width with two columns on desktop / One column on mobile
+
   # Enable SVG CSS animations
   config_animations:
     description: SVG CSS animations
@@ -178,9 +188,8 @@ inputs:
   # Specify one value (for both width and height) or two values (one for width and one for height)
   config_padding:
     description: Image padding
-    type: array
-    format: comma-separated
-    default: 6%, 13%
+    type: string
+    default: 0, 8 + 11%
 
   # Metrics output format
   config_output:
@@ -276,3 +285,12 @@ inputs:
     description: Use pre-built image from GitHub registry
     type: boolean
     default: yes
+
+  # Time to wait (in seconds) at the end of job
+  # Use this to avoid triggering abuse mechanics on large workflows
+  delay:
+    description: Use this to avoid triggering abuse mechanics on large workflows
+    type: number
+    default: 0
+    min: 0
+    max: 3600

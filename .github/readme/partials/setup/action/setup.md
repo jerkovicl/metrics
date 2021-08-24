@@ -72,6 +72,8 @@ Rendered metrics will be committed to your repository on each run.
 If you wish to use new features as they're being released, you can switch from `@latest` to `@master`.
 As the latter is used as a development branch, jobs may fail from time to time (although we try to mitigate this).
 
+For convenience, it is possible to use `@main` instead of `@master`.
+
 When using a token with additional permissions, it is advised to fork this repository and use it instead to minimize security risks:
 ```yaml
       - uses: my-github-username/metrics@master
@@ -80,7 +82,7 @@ When using a token with additional permissions, it is advised to fork this repos
 
 In this case, please consider watching new releases to stay up-to-date and enjoy latest features!
 
-`@latest` will be updated on each release soon after [Planned for next release](https://github.com/lowlighter/metrics/projects/1#column-12378679) is emptied. Metrics doesn't introduce breaking changes **from an user point of view** (i.e. your workflows will always be valid) so you can follow release cycles without worrying.
+`@latest` will be updated on each release. Metrics doesn't introduce breaking changes **from an user point of view** (i.e. your workflows will always be valid) so you can follow release cycles without worrying.
 
 #### Examples workflows
 
@@ -97,4 +99,6 @@ Update your README.md to embed your metrics:
 ![Metrics](https://github.com/my-github-user/my-github-user/blob/master/github-metrics.svg)
 <!-- If you're using "main" as default branch -->
 ![Metrics](https://github.com/my-github-user/my-github-user/blob/main/github-metrics.svg)
+<!-- If you're using the "columns" display mode -->
+<img src="https://github.com/my-github-user/my-github-user/blob/master/github-metrics.svg" alt="Metrics" width="100%">
 ```

@@ -14,6 +14,7 @@ export default async function metadata({log = true} = {}) {
   const __templates = path.join(__metrics, "source/templates")
   const __plugins = path.join(__metrics, "source/plugins")
   const __package = path.join(__metrics, "package.json")
+  const __descriptor = path.join(__metrics, "action.yml")
 
   //Init
   const logger = log ? console.debug : () => null
@@ -29,15 +30,13 @@ export default async function metadata({log = true} = {}) {
   }
   //Reorder keys
   const {base, core, ...plugins} = Plugins //eslint-disable-line no-unused-vars
-  Plugins = Object.fromEntries(Object.entries(Plugins).sort(([_an, a], [_bn, b]) => a.categorie === b.categorie ? (a.index ?? Infinity) - (b.index ?? Infinity) : categories.indexOf(a.categorie) - categories.indexOf(b.categorie)))
+  Plugins = Object.fromEntries(Object.entries(Plugins).sort(([_an, a], [_bn, b]) => a.category === b.category ? (a.index ?? Infinity) - (b.index ?? Infinity) : categories.indexOf(a.category) - categories.indexOf(b.category)))
   logger(`metrics/metadata > loaded [${Object.keys(Plugins).join(", ")}]`)
   //Load templates metadata
   let Templates = {}
   logger("metrics/metadata > loading templates metadata")
   for (const name of await fs.promises.readdir(__templates)) {
     if (!(await fs.promises.lstat(path.join(__templates, name))).isDirectory())
-      continue
-    if (/^@/.test(name))
       continue
     logger(`metrics/metadata > loading template metadata [${name}]`)
     Templates[name] = await metadata.template({__templates, name, plugins, logger})
@@ -49,8 +48,11 @@ export default async function metadata({log = true} = {}) {
   //Packaged metadata
   const packaged = JSON.parse(`${await fs.promises.readFile(__package)}`)
 
+  //Descriptor metadata
+  const descriptor = yaml.load(`${await fs.promises.readFile(__descriptor, "utf-8")}`)
+
   //Metadata
-  return {plugins:Plugins, templates:Templates, packaged}
+  return {plugins:Plugins, templates:Templates, packaged, descriptor}
 }
 
 /**Metadata extractor for templates */
@@ -60,9 +62,9 @@ metadata.plugin = async function({__plugins, name, logger}) {
     const raw = `${await fs.promises.readFile(path.join(__plugins, name, "metadata.yml"), "utf-8")}`
     const {inputs, ...meta} = yaml.load(raw)
 
-    //Categorie
-    if (!categories.includes(meta.categorie))
-      meta.categorie = "other"
+    //category
+    if (!categories.includes(meta.category))
+      meta.category = "other"
 
     //Inputs parser
     {
@@ -74,6 +76,19 @@ metadata.plugin = async function({__plugins, name, logger}) {
           const context = q.repo ? "repository" : account
           if (!meta.supports?.includes(context))
             throw {error:{message:`Not supported for: ${context}`, instance:new Error()}}
+        }
+        //Special values replacer
+        const replacer = value => {
+          value = `${value}`.trim()
+          if (user) {
+            if (value === ".user.login")
+              return user.login ?? value
+            if (value === ".user.twitter")
+              return user.twitterUsername ?? value
+            if (value === ".user.website")
+              return user.websiteUrl ?? value
+          }
+          return value
         }
         //Inputs checks
         const result = Object.fromEntries(
@@ -116,31 +131,30 @@ metadata.plugin = async function({__plugins, name, logger}) {
                   }
                   const separators = {"comma-separated":",", "space-separated":" "}
                   const separator = separators[[format].flat().filter(s => s in separators)[0]] ?? ","
-                  return value.split(separator).map(v => v.trim().toLocaleLowerCase()).filter(v => Array.isArray(values) ? values.includes(v) : true).filter(v => v)
+                  return value.split(separator).map(v => replacer(v).toLocaleLowerCase()).filter(v => Array.isArray(values) ? values.includes(v) : true).filter(v => v)
                 }
                 //String
                 case "string": {
-                  value = `${value}`.trim()
-                  if (user) {
-                    if (value === ".user.login")
-                      return user.login
-                    if (value === ".user.twitter")
-                      return user.twitterUsername
-                    if (value === ".user.website")
-                      return user.websiteUrl
-                  }
+                  value = replacer(value)
                   if ((Array.isArray(values)) && (!values.includes(value)))
                     return defaulted
                   return value
                 }
                 //JSON
                 case "json": {
+                  if (typeof value === "object")
+                    return value
                   try {
                     value = JSON.parse(value)
                   }
-                  catch {
-                    logger(`metrics/inputs > failed to parse json : ${value}`)
-                    value = JSON.parse(defaulted)
+                  catch (error) {
+                    try {
+                      value = JSON.parse(decodeURIComponent(value))
+                    }
+                    catch (error) {
+                      logger(`metrics/inputs > failed to parse json : ${value}`)
+                      value = JSON.parse(defaulted)
+                    }
                   }
                   return value
                 }
@@ -180,7 +194,7 @@ metadata.plugin = async function({__plugins, name, logger}) {
         Object.entries(inputs).map(([key, value]) => [
           key,
           {
-            comment:comments[key] ?? "",
+            comment:comments[key] ?? `# ${value.description}`,
             descriptor:yaml.dump({[key]:Object.fromEntries(Object.entries(value).filter(([key]) => ["description", "default", "required"].includes(key)))}, {quotingType:'"', noCompatMode:true}),
           },
         ]),
@@ -261,7 +275,7 @@ metadata.template = async function({__templates, name, plugins, logger}) {
   try {
     //Load meta descriptor
     const raw = fs.existsSync(path.join(__templates, name, "metadata.yml")) ? `${await fs.promises.readFile(path.join(__templates, name, "metadata.yml"), "utf-8")}` : ""
-    const readme = `${await fs.promises.readFile(path.join(__templates, name, "README.md"), "utf-8")}`
+    const readme = fs.existsSync(path.join(__templates, name, "README.md")) ? `${await fs.promises.readFile(path.join(__templates, name, "README.md"), "utf-8")}` : ""
     const meta = yaml.load(raw) ?? {}
 
     //Compatibility

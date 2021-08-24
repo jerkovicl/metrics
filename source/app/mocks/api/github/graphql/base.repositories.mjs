@@ -4,6 +4,9 @@ export default function({faker, query, login = faker.internet.userName()}) {
   return /after: "MOCKED_CURSOR"/m.test(query)
     ? ({
       user:{
+        get repositoriesContributedTo() {
+          return this.repositories
+        },
         repositories:{
           edges:[],
           nodes:[],
@@ -12,6 +15,9 @@ export default function({faker, query, login = faker.internet.userName()}) {
     })
     : ({
       user:{
+        get repositoriesContributedTo() {
+          return this.repositories
+        },
         repositories:{
           edges:[
             {
@@ -43,6 +49,8 @@ export default function({faker, query, login = faker.internet.userName()}) {
               releases:{totalCount:faker.datatype.number(100)},
               forkCount:faker.datatype.number(100),
               licenseInfo:{spdxId:"MIT"},
+              deployments:{totalCount:faker.datatype.number(100)},
+              environments:{totalCount:faker.datatype.number(100)},
             },
           ],
         },

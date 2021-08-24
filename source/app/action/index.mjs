@@ -92,6 +92,7 @@ async function wait(seconds) {
       retries,
       "retries.delay":retries_delay,
       "output.action":_action,
+      delay,
       ...config
     } = metadata.plugins.core.inputs.action({core})
     const q = {...query, ...(_repo ? {repo:_repo} : null), template}
@@ -147,8 +148,8 @@ async function wait(seconds) {
     catch {
       authenticated = github.context.repo.owner
     }
+    conf.authenticated = authenticated
     const user = _user || authenticated
-    conf.authenticated = user
     info("GitHub account", user)
     if (q.repo)
       info("GitHub repository", `${user}/${q.repo}`)
@@ -207,12 +208,12 @@ async function wait(seconds) {
       try {
         const {repository:{object:{oid}}} = await graphql(
           `
-                    query Sha {
-                      repository(owner: "${github.context.repo.owner}", name: "${github.context.repo.repo}") {
-                        object(expression: "${committer.head}:${filename}") { ... on Blob { oid } }
-                      }
-                    }
-                  `,
+            query Sha {
+              repository(owner: "${github.context.repo.owner}", name: "${github.context.repo.repo}") {
+                object(expression: "${committer.head}:${filename}") { ... on Blob { oid } }
+              }
+            }
+          `,
           {headers:{authorization:`token ${committer.token}`}},
         )
         committer.sha = oid
@@ -250,8 +251,9 @@ async function wait(seconds) {
 
     //Base content
     info.break()
-    const {base:parts, ...base} = metadata.plugins.base.inputs.action({core})
-    info.group({metadata, name:"base", inputs:base})
+    const {base:parts, repositories:_repositories, ...base} = metadata.plugins.base.inputs.action({core})
+    conf.settings.repositories = _repositories
+    info.group({metadata, name:"base", inputs:{repositories:conf.settings.repositories, ...base}})
     info("Base sections", parts)
     base.base = false
     for (const part of conf.settings.plugins.base.parts)
@@ -309,7 +311,7 @@ async function wait(seconds) {
       info("Actions to perform", "(none)")
     else {
       await fs.mkdir(paths.dirname(paths.join("/renders", filename)), {recursive:true})
-      await fs.writeFile(paths.join("/renders", filename), Buffer.from(rendered))
+      await fs.writeFile(paths.join("/renders", filename), Buffer.from(typeof rendered === "object" ? JSON.stringify(rendered) : `${rendered}`))
       info(`Save to /metrics_renders/${filename}`, "ok")
     }
 
@@ -325,12 +327,12 @@ async function wait(seconds) {
         try {
           const {repository:{object:{oid}}} = await graphql(
             `
-                    query Sha {
-                      repository(owner: "${github.context.repo.owner}", name: "${github.context.repo.repo}") {
-                        object(expression: "${committer.head}:${path}") { ... on Blob { oid } }
-                      }
-                    }
-                  `,
+              query Sha {
+                repository(owner: "${github.context.repo.owner}", name: "${github.context.repo.repo}") {
+                  object(expression: "${committer.head}:${path}") { ... on Blob { oid } }
+                }
+              }
+            `,
             {headers:{authorization:`token ${committer.token}`}},
           )
           sha = oid
@@ -377,7 +379,7 @@ async function wait(seconds) {
         ...github.context.repo,
         path:filename,
         message:committer.message,
-        content:Buffer.from(rendered).toString("base64"),
+        content:Buffer.from(typeof rendered === "object" ? JSON.stringify(rendered) : `${rendered}`).toString("base64"),
         branch:committer.pr ? committer.head : committer.branch,
         ...(committer.sha ? {sha:committer.sha} : {}),
       })
@@ -447,6 +449,13 @@ async function wait(seconds) {
           break
         } while (--attempts)
       }
+    }
+
+    //Delay
+    if (delay) {
+      info.break()
+      info("Delay before ending job", `${delay}s`)
+      await new Promise(solve => setTimeout(solve, delay*1000))
     }
 
     //Success
