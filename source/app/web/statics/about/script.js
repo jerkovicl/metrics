@@ -9,6 +9,10 @@
         this.palette = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
       }
       catch (error) {}
+      //Embed
+      this.embed = !!(new URLSearchParams(location.search).get("embed"))
+      //From local storage
+      this.localstorage = !!(new URLSearchParams(location.search).get("localstorage"))
       //User
       const user = location.pathname.split("/").pop()
       if ((user) && (user !== "about")) {
@@ -18,8 +22,6 @@
       else {
         this.searchable = true
       }
-      //Embed
-      this.embed = !!(new URLSearchParams(location.search).get("embed"))
       //Init
       await Promise.all([
         //GitHub limit tracker
@@ -80,6 +82,10 @@
           this.error = null
           this.metrics = null
           this.pending = true
+          if (this.localstorage) {
+            this.metrics = JSON.parse(localStorage.getItem("local.metrics") ?? "null")
+            return
+          }
           this.metrics = (await axios.get(`/about/query/${this.user}`)).data
         }
         catch (error) {
@@ -87,6 +93,11 @@
         }
         finally {
           this.pending = false
+          try {
+            const { data: requests } = await axios.get("/.requests")
+            this.requests = requests
+          }
+          catch {}
         }
       },
     },
@@ -96,7 +107,7 @@
         return this.metrics?.rendered.plugins.achievements.list?.filter(({ leaderboard }) => leaderboard).sort((a, b) => a.leaderboard.type.localeCompare(b.leaderboard.type)) ?? []
       },
       achievements() {
-        return this.metrics?.rendered.plugins.achievements.list?.filter(({ leaderboard }) => !leaderboard).filter(({ title }) => !/(?:automater|octonaut|infographile)/i.test(title)) ?? []
+        return this.metrics?.rendered.plugins.achievements.list?.filter(({ leaderboard }) => !leaderboard).filter(({ title }) => !/(?:automator|octonaut|infographile)/i.test(title)) ?? []
       },
       introduction() {
         return this.metrics?.rendered.plugins.introduction?.text ?? ""
@@ -136,6 +147,10 @@
       preview() {
         return /-preview$/.test(this.version)
       },
+      rlreset() {
+        const reset = new Date(Math.max(this.requests.graphql.reset, this.requests.rest.reset))
+        return `${reset.getHours()}:${reset.getMinutes()}`
+      },
     },
     //Data initialization
     data: {
@@ -143,8 +158,9 @@
       hosted: null,
       user: "",
       embed: false,
+      localstorage: false,
       searchable: false,
-      requests: { limit: 0, used: 0, remaining: 0, reset: 0 },
+      requests: { rest: { limit: 0, used: 0, remaining: 0, reset: NaN }, graphql: { limit: 0, used: 0, remaining: 0, reset: NaN } },
       palette: "light",
       metrics: null,
       pending: false,

@@ -5,7 +5,7 @@ const fs = require("fs")
 const path = require("path")
 const url = require("url")
 const axios = require("axios")
-const faker = require("faker")
+const faker = require("@faker-js/faker")
 const ejs = require("ejs")
 
 //Github action
@@ -33,7 +33,7 @@ web.run = async vars => (await axios(`http://localhost:3000/lowlighter?${new url
 web.start = async () =>
   new Promise(solve => {
     let stdout = ""
-    web.instance = processes.spawn("node", ["source/app/web/index.mjs"], { env: { ...process.env, USE_MOCKED_DATA: true, NO_SETTINGS: true } })
+    web.instance = processes.spawn("node", ["source/app/web/index.mjs"], { env: { ...process.env, SANDBOX: true } })
     web.instance.stdout.on("data", data => (stdout += data, /Server ready !/.test(stdout) ? solve() : null))
     web.instance.stderr.on("data", data => console.error(`${data}`))
   })
@@ -70,7 +70,7 @@ placeholder.run = async vars => {
 //Setup
 beforeAll(async () => {
   //Clean community template
-  await fs.promises.rm(path.join(__dirname, "../source/templates/@classic"), { recursive: true, force:true })
+  await fs.promises.rm(path.join(__dirname, "../source/templates/@classic"), { recursive: true, force: true })
   //Start web instance
   await web.start()
 })
@@ -79,7 +79,7 @@ afterAll(async () => {
   //Stop web instance
   await web.stop()
   //Clean community template
-  await fs.promises.rm(path.join(__dirname, "../source/templates/@classic"), { recursive: true, force:true })
+  await fs.promises.rm(path.join(__dirname, "../source/templates/@classic"), { recursive: true, force: true })
 })
 
 //Load metadata (as jest doesn't support ESM modules, we use this dirty hack)
@@ -94,16 +94,18 @@ const metadata = JSON.parse(`${
 
 //Build tests index
 const tests = []
-for (const name in metadata.plugins) {
-  const cases = yaml
-    .load(fs.readFileSync(path.join(__dirname, "../source/plugins", name, "tests.yml"), "utf8"))
-    ?.map(({ name: test, with: inputs, modes = [], timeout }) => {
-      const skip = new Set(Object.entries(metadata.templates).filter(([_, { readme: { compatibility } }]) => !compatibility[name]).map(([template]) => template))
-      if (!(metadata.plugins[name].supports.includes("repository")))
-        skip.add("repository")
-      return [test, inputs, { skip: [...skip], modes, timeout }]
-    }) ?? []
-  tests.push(...cases)
+for (const type of ["plugins", "templates"]) {
+  for (const name in metadata[type]) {
+    const cases = yaml
+      .load(fs.readFileSync(path.join(__dirname, "../tests/cases", `${name}.${type.replace(/s$/, "")}.yml`), "utf8"))
+      ?.map(({ name: test, with: inputs, modes = [], timeout }) => {
+        const skip = new Set(Object.entries(metadata.templates).filter(([_, { readme: { compatibility } }]) => !compatibility[name]).map(([template]) => template))
+        if (!(metadata[type][name].supports?.includes("repository")))
+          skip.add("repository")
+        return [test, inputs, { skip: [...skip], modes, timeout }]
+      }) ?? []
+    tests.push(...cases)
+  }
 }
 
 //Tests run

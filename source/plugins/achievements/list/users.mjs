@@ -95,13 +95,13 @@ export default async function({list, login, data, computed, imports, graphql, qu
     })
   }
 
-  //Scripter
+  //Gister
   {
     const value = user.gists.totalCount
     const unlock = user.gists.nodes?.shift()
 
     list.push({
-      title:"Scripter",
+      title:"Gister",
       text:`Published ${value} gist${imports.s(value)}`,
       icon:'<g stroke-width="2" fill="none" fill-rule="evenodd"><path d="M20 48.875v-12.75c0-1.33.773-2.131 2.385-2.125h26.23c1.612-.006 2.385.795 2.385 2.125v12.75C51 50.198 50.227 51 48.615 51h-26.23C20.773 51 20 50.198 20 48.875zM37 40.505h9M37 44.492h6" stroke="#primary" stroke-linecap="round" stroke-linejoin="round"/><path stroke="#secondary" stroke-linecap="round" stroke-linejoin="round" d="M14 30h-4M16 35h-3M47 10H5M42 15H24M19 15h-9M16 25h-3M42 20h-2M42 20h-2M42 25h-2M16 20h-3"/><path stroke="#primary" stroke-linecap="round" stroke-linejoin="round" d="M31.974 25H24"/><path d="M22 20h12a2 2 0 012 2v6a2 2 0 01-2 2H22a2 2 0 01-2-2v-6a2 2 0 012-2z" stroke="#primary"/><path d="M5 33V7a2 2 0 012-2h38a2 2 0 012 2v23" stroke="#secondary" stroke-linecap="round"/><path d="M5 30v8c0 1.105.892 2 1.993 2H16" stroke="#secondary" stroke-linecap="round"/><g stroke="#primary" stroke-linecap="round"><path d="M26.432 37.933v7.07M26.432 37.933v9.07M24.432 40.433h7.07M24.432 40.433h8.07M24.432 44.433h7.07M24.432 44.433h8.07M30.432 37.933v9.07"/></g></g>',
       ...rank(value, [1, 20, 50, 100, 250]),
@@ -219,7 +219,7 @@ export default async function({list, login, data, computed, imports, graphql, qu
 
   //Member
   {
-    const value = computed.registered.diff
+    const {years:value} = computed.registered
     const unlock = null
 
     list.push({
@@ -324,13 +324,13 @@ export default async function({list, login, data, computed, imports, graphql, qu
     })
   }
 
-  //Automater
+  //Automator
   {
     const value = process.env.GITHUB_ACTIONS
     const unlock = null
 
     list.push({
-      title:"Automater",
+      title:"Automator",
       text:"Use GitHub Actions to automate profile updates",
       icon:'<g transform="translate(4 5)" stroke-width="2" fill="none" fill-rule="evenodd"><g stroke-linecap="round" stroke-linejoin="round"><path stroke="#primary" d="M26.478 22l.696 2.087 3.478.696v2.782l-3.478 1.392-.696 1.39 1.392 3.48-1.392 1.39L23 33.827l-1.391.695L20.217 38h-2.782l-1.392-3.478-1.39-.696-3.48 1.391-1.39-1.39 1.39-3.48-.695-1.39L7 27.565v-2.782l3.478-1.392.696-1.391-1.391-3.478 1.39-1.392 3.48 1.392 1.39-.696 1.392-3.478h2.782l1.392 3.478 1.391.696 3.478-1.392 1.392 1.392z"/><path stroke="#secondary" d="M24.779 12.899l-1.475-2.212 1.475-1.475 2.95 1.475 1.474-.738.737-2.934h2.212l.737 2.934 1.475.738 2.95-1.475 1.474 1.475-1.475 2.949.738 1.475 2.949.737v2.212l-2.95.737-.737 1.475 1.475 2.949-1.475 1.475-2.949-1.475"/></g><path stroke="#primary" stroke-linecap="round" d="M5.932 5.546l7.082 6.931"/><path stroke="#secondary" stroke-linecap="round" d="M32.959 31.99l8.728 8.532"/><circle stroke="#secondary" cx="44" cy="43" r="3"/><circle stroke="#primary" cx="13" cy="2" r="2"/><circle stroke="#secondary" cx="35" cy="44" r="2"/><circle stroke="#secondary" cx="3" cy="12" r="2"/><circle stroke="#primary" cx="45" cy="34" r="2"/><path d="M3.832 0a3 3 0 110 6 3 3 0 010-6zM8.04 10.613l2.1-.613M10.334 9.758l1.914-5.669" stroke="#primary" stroke-linecap="round"/><path stroke="#secondary" stroke-linecap="round" d="M40.026 35.91l-2.025.591M35.695 41.965l1.843-5.326"/><path d="M16 2h23.038a6 6 0 016 6v24.033" stroke="#primary" stroke-linecap="round"/><path d="M32.038 44.033H9a6 6 0 01-6-6V14" stroke="#secondary" stroke-linecap="round"/><path d="M17.533 22.154l5.113 3.22a1 1 0 01-.006 1.697l-5.113 3.17a1 1 0 01-1.527-.85V23a1 1 0 011.533-.846zm11.58-7.134v-.504a1 1 0 011.53-.85l3.845 2.397a1 1 0 01-.006 1.701l-3.846 2.358" stroke="#primary" stroke-linecap="round" stroke-linejoin="round"/></g>',
       rank:value ? "$" : "X",

@@ -31,7 +31,9 @@
         //Plugins
         (async () => {
           const { data: plugins } = await axios.get("/.plugins")
-          this.plugins.list = plugins.filter(({name}) => metadata[name]?.supports.includes("user") || metadata[name]?.supports.includes("organization"))
+          this.plugins.list = plugins.filter(({ name }) => metadata[name]?.supports.includes("user") || metadata[name]?.supports.includes("organization"))
+          const categories = [...new Set(this.plugins.list.map(({ category }) => category))]
+          this.plugins.categories = Object.fromEntries(categories.map(category => [category, this.plugins.list.filter(value => category === value.category)]))
         })(),
         //Base
         (async () => {
@@ -66,8 +68,10 @@
       tab: {
         immediate: true,
         handler(current) {
-          if (current === 'action') this.clipboard = new ClipboardJS('.copy-action')
-          else this.clipboard?.destroy()
+          if (current === "action")
+            this.clipboard = new ClipboardJS(".copy-action")
+          else
+            this.clipboard?.destroy()
         },
       },
       palette: {
@@ -86,14 +90,29 @@
       tab: "overview",
       palette: "light",
       clipboard: null,
-      requests: { limit: 0, used: 0, remaining: 0, reset: 0 },
+      requests: { rest: { limit: 0, used: 0, remaining: 0, reset: NaN }, graphql: { limit: 0, used: 0, remaining: 0, reset: NaN } },
       cached: new Map(),
       config: Object.fromEntries(Object.entries(metadata.core.web).map(([key, { defaulted }]) => [key, defaulted])),
       metadata: Object.fromEntries(Object.entries(metadata).map(([key, { web }]) => [key, web])),
       hosted: null,
+      docs: {
+        overview: {
+          link: "https://github.com/lowlighter/metrics#-documentation",
+          name: "Complete documentation",
+        },
+        markdown: {
+          link: "https://github.com/lowlighter/metrics/blob/master/.github/readme/partials/documentation/setup/shared.md",
+          name: "Setup using the shared instance",
+        },
+        action: {
+          link: "https://github.com/lowlighter/metrics/blob/master/.github/readme/partials/documentation/setup/action.md",
+          name: "Setup using GitHub Action on a profile repository",
+        },
+      },
       plugins: {
         base: {},
         list: [],
+        categories: [],
         enabled: {},
         descriptions: {
           base: "🗃️ Base content",
@@ -174,6 +193,13 @@
       embed() {
         return `![Metrics](${this.url})`
       },
+      //Token scopes
+      scopes() {
+        return new Set([
+          ...Object.entries(this.plugins.enabled).filter(([key, value]) => (key !== "base") && (value)).flatMap(([key]) => metadata[key].scopes),
+          ...(Object.entries(this.plugins.enabled.base).filter(([key, value]) => value).length ? metadata.base.scopes : []),
+        ])
+      },
       //GitHub action auto-generated code
       action() {
         return [
@@ -191,8 +217,20 @@
           `    steps:`,
           `      - uses: lowlighter/metrics@latest`,
           `        with:`,
-          `          # Your GitHub token`,
-          `          token: ${"$"}{{ secrets.METRICS_TOKEN }}`,
+          ...(this.scopes.size
+            ? [
+              `          # Your GitHub token`,
+              `          # The following scopes are required:`,
+              ...[...this.scopes].map(scope => `          #  - ${scope}${scope === "public_access" ? " (default scope)" : ""}`),
+              `          # The following additional scopes may be required:`,
+              `          #  - read:org  (for organization related metrics)`,
+              `          #  - read:user (for user related data)`,
+              `          #  - repo      (optional, if you want to include private repositories)`,
+            ]
+            : [
+              `          # Current configuration doesn't require a GitHub token`,
+            ]),
+          `          token: ${this.scopes.size ? `${"$"}{{ secrets.METRICS_TOKEN }}` : "NOT_NEEDED"}`,
           ``,
           `          # Options`,
           `          user: ${this.user}`,
@@ -227,11 +265,26 @@
       preview() {
         return /-preview$/.test(this.version)
       },
+      //Rate limit reset
+      rlreset() {
+        const reset = new Date(Math.max(this.requests.graphql.reset, this.requests.rest.reset))
+        return `${reset.getHours()}:${reset.getMinutes()}`
+      },
     },
     //Methods
     methods: {
+      //Refresh computed properties
+      async refresh() {
+        const keys = { action: ["scopes", "action"], markdown: ["url", "embed"] }[this.tab]
+        if (keys) {
+          for (const key of keys)
+            this._computedWatchers[key]?.run()
+          this.$forceUpdate()
+        }
+      },
       //Load and render placeholder image
       async mock({ timeout = 600 } = {}) {
+        this.refresh()
         clearTimeout(this.templates.placeholder.timeout)
         this.templates.placeholder.timeout = setTimeout(async () => {
           this.templates.placeholder.image = await placeholder(this)
@@ -265,6 +318,11 @@
         }
         finally {
           this.generated.pending = false
+          try {
+            const { data: requests } = await axios.get("/.requests")
+            this.requests = requests
+          }
+          catch {}
         }
       },
     },
