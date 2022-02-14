@@ -15,7 +15,8 @@
   </tr>
   <tr>
     <td colspan="2" align="center">
-      <img src="https://github.com/lowlighter/metrics/blob/examples/metrics.plugin.starlists.svg" alt=""></img>
+      <details open><summary>Repositories from star lists</summary><img src="https://github.com/lowlighter/metrics/blob/examples/metrics.plugin.starlists.svg" alt=""></img></details>
+      <details open><summary>Languages from star lists</summary><img src="https://github.com/lowlighter/metrics/blob/examples/metrics.plugin.starlists.languages.svg" alt=""></img></details>
       <img width="900" height="1" alt="">
     </td>
   </tr>
@@ -30,7 +31,7 @@
     <td align="center" nowrap="nowrap">Type</i></td><td align="center" nowrap="nowrap">Description</td>
   </tr>
   <tr>
-    <td nowrap="nowrap"><code>plugin_starlists</code></td>
+    <td nowrap="nowrap"><h4><code>plugin_starlists</code></h4></td>
     <td rowspan="2"><p>Enable starlists plugin</p>
 <img width="900" height="1" alt=""></td>
   </tr>
@@ -40,7 +41,7 @@
 <b>default:</b> no<br></td>
   </tr>
   <tr>
-    <td nowrap="nowrap"><code>plugin_starlists_limit</code></td>
+    <td nowrap="nowrap"><h4><code>plugin_starlists_limit</code></h4></td>
     <td rowspan="2"><p>Display limit (star lists)</p>
 <img width="900" height="1" alt=""></td>
   </tr>
@@ -53,7 +54,7 @@
 <b>default:</b> 2<br></td>
   </tr>
   <tr>
-    <td nowrap="nowrap"><code>plugin_starlists_limit_repositories</code></td>
+    <td nowrap="nowrap"><h4><code>plugin_starlists_limit_repositories</code></h4></td>
     <td rowspan="2"><p>Display limit (repositories per star list)</p>
 <img width="900" height="1" alt=""></td>
   </tr>
@@ -66,7 +67,30 @@
 <b>default:</b> 2<br></td>
   </tr>
   <tr>
-    <td nowrap="nowrap"><code>plugin_starlists_shuffle_repositories</code></td>
+    <td nowrap="nowrap"><h4><code>plugin_starlists_languages</code></h4></td>
+    <td rowspan="2"><p>Toggle star list languages statistics</p>
+<img width="900" height="1" alt=""></td>
+  </tr>
+  <tr>
+    <td nowrap="nowrap"><b>type:</b> <code>boolean</code>
+<br>
+<b>default:</b> no<br></td>
+  </tr>
+  <tr>
+    <td nowrap="nowrap"><h4><code>plugin_starlists_limit_languages</code></h4></td>
+    <td rowspan="2"><p>Disply limit (languages per star list)</p>
+<img width="900" height="1" alt=""></td>
+  </tr>
+  <tr>
+    <td nowrap="nowrap"><b>type:</b> <code>number</code>
+<i>(0 ≤
+𝑥)</i>
+<br>
+<b>zero behaviour:</b> disable</br>
+<b>default:</b> 8<br></td>
+  </tr>
+  <tr>
+    <td nowrap="nowrap"><h4><code>plugin_starlists_shuffle_repositories</code></h4></td>
     <td rowspan="2"><p>Shuffle data for varied outputs</p>
 <img width="900" height="1" alt=""></td>
   </tr>
@@ -76,7 +100,7 @@
 <b>default:</b> yes<br></td>
   </tr>
   <tr>
-    <td nowrap="nowrap"><code>plugin_starlists_ignored</code></td>
+    <td nowrap="nowrap"><h4><code>plugin_starlists_ignored</code></h4></td>
     <td rowspan="2"><p>Skipped star lists</p>
 <p>This is case and emojis insensitive</p>
 <img width="900" height="1" alt=""></td>
@@ -87,7 +111,7 @@
 <br></td>
   </tr>
   <tr>
-    <td nowrap="nowrap"><code>plugin_starlists_only</code></td>
+    <td nowrap="nowrap"><h4><code>plugin_starlists_only</code></h4></td>
     <td rowspan="2"><p>Restrict display to specified star lists</p>
 <p>This is case and emojis insensitive.
 This option is equivalent to <code>plugin_starlists_ignored</code> with all star lists but the ones listed in this option</p>
@@ -114,6 +138,20 @@ with:
   plugin_starlists: yes
   plugin_starlists_limit_repositories: 2
   plugin_starlists_only: TC39
+
+```
+```yaml
+name: Featured star list languages
+uses: lowlighter/metrics@latest
+with:
+  filename: metrics.plugin.starlists.languages.svg
+  token: NOT_NEEDED
+  base: ""
+  plugin_starlists: yes
+  plugin_starlists_languages: yes
+  plugin_starlists_limit_languages: 8
+  plugin_starlists_limit_repositories: 0
+  plugin_starlists_only: Awesome
 
 ```
 <!--/examples-->

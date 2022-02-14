@@ -129,6 +129,10 @@ inputs:
     description: Use GitHub custom emojis
     default: <default-value>
   
+  config_octicon:
+    description: Use GitHub octicons
+    default: <default-value>
+  
   config_display:
     description: Display width (for image output formats)
     default: <default-value>
@@ -635,6 +639,10 @@ inputs:
     description: Indepth mode
     default: <default-value>
   
+  plugin_notable_types:
+    description: Contribution types filter
+    default: <default-value>
+  
   # ====================================================================================
   # 💬 Discussions
   
@@ -732,6 +740,14 @@ inputs:
   
   plugin_starlists_limit_repositories:
     description: Display limit (repositories per star list)
+    default: <default-value>
+  
+  plugin_starlists_languages:
+    description: Toggle star list languages statistics
+    default: <default-value>
+  
+  plugin_starlists_limit_languages:
+    description: Disply limit (languages per star list)
     default: <default-value>
   
   plugin_starlists_shuffle_repositories:

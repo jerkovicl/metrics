@@ -12,6 +12,9 @@ const categories = ["core", "github", "social", "community"]
 //Previous descriptors
 let previous = null
 
+//Environment
+const env = {ghactions:`${process.env.GITHUB_ACTIONS}` === "true"}
+
 /**Metadata descriptor parser */
 export default async function metadata({log = true, diff = false} = {}) {
   //Paths
@@ -81,7 +84,7 @@ export default async function metadata({log = true, diff = false} = {}) {
   const descriptor = yaml.load(`${await fs.promises.readFile(__descriptor, "utf-8")}`)
 
   //Metadata
-  return {plugins:Plugins, templates:Templates, packaged, descriptor}
+  return {plugins:Plugins, templates:Templates, packaged, descriptor, env}
 }
 
 /**Metadata extractor for inputs */
@@ -244,14 +247,21 @@ metadata.plugin = async function({__plugins, __templates, name, logger}) {
         const q = {}
         for (const key of Object.keys(inputs)) {
           //Parse input
-          let value = `${core.getInput(key)}`.trim()
-          try {
-            value = decodeURIComponent(value)
+          let value
+          if (env.ghactions) {
+            value = `${core.getInput(key)}`.trim()
+            try {
+              value = decodeURIComponent(value)
+            }
+            catch {
+              logger(`metrics/inputs > failed to decode uri for ${key}: ${value}`)
+              value = "<default-value>"
+            }
           }
-          catch {
-            logger(`metrics/inputs > failed to decode uri for ${key}: ${value}`)
-            value = "<default-value>"
-          }
+          else
+            value = process.env[`INPUT_${key.toUpperCase()}`]?.trim() ?? "<default-value>"
+
+
           const unspecified = value === "<default-value>"
           //From presets
           if ((key in preset) && (unspecified)) {
@@ -404,7 +414,7 @@ metadata.plugin = async function({__plugins, __templates, name, logger}) {
           if ("values" in o)
             cell.push(`<b>allowed values:</b><ul>${o.values.map(value => `<li>${value}</li>`).join("")}</ul>`)
           return `  <tr>
-    <td nowrap="nowrap"><code>${option}</code></td>
+    <td nowrap="nowrap"><h4><code>${option}</code></h4></td>
     <td rowspan="2">${marked.parse(description, {silent:true})}<img width="900" height="1" alt=""></td>
   </tr>
   <tr>
@@ -505,11 +515,11 @@ metadata.template = async function({__templates, name, plugins}) {
         if (account !== "bypass") {
           const context = q.repo ? "repository" : account
           if ((Array.isArray(this.supports)) && (!this.supports.includes(context)))
-            throw new Error(`not supported for: ${context}`)
+            throw new Error(`template not supported for: ${context}`)
         }
         //Format check
         if ((format) && (Array.isArray(this.formats)) && (!this.formats.includes(format)))
-          throw new Error(`not supported for: ${format}`)
+          throw new Error(`template not supported for: ${format}`)
       },
     }
   }
